@@ -1,4 +1,5 @@
 import au.com.bytecode.opencsv.CSVWriter;
+import com.sun.javafx.fxml.builder.URLBuilder;
 import org.apache.http.client.fluent.Content;
 import org.apache.http.client.fluent.Request;
 import org.json.simple.JSONArray;
@@ -11,14 +12,8 @@ import java.util.Map;
 
 public class DynamicPageParser implements Parser {
 
-    final String callBack = "jQuery183036233163592076556_1626925634436";
-    final String widgetId = "5547572";
-    final String platform = "12";
-    final String limit = "12";
-    private int offSet = 0;
-    final String phase = "1";
-    final String postBack = "614f97c3-8d66-440b-a144-48b33fb9b377";
-    StringBuilder stringBuilder;
+    UrlBuilder urlBuilder;
+
     private int recordsCount = 0;
 
     private CsvFileWriter csvFileWriter = new CsvFileWriter(new CSVWriter(new FileWriter("dynamicdata.csv")));
@@ -29,7 +24,7 @@ public class DynamicPageParser implements Parser {
                 "Product Link", "Product rate", "Product Stars"};
         csvFileWriter.toCreateFile("dynamicdata.csv");
         csvFileWriter.toWrite(header);
-
+        urlBuilder = new UrlBuilder();
     }
 
    public int getCount() {
@@ -46,40 +41,19 @@ public class DynamicPageParser implements Parser {
         return data;
     }
 
-
-
-    public StringBuilder getUrl() {
-        stringBuilder = new StringBuilder();
-        return stringBuilder.append("https://gpsfront.aliexpress.com/getRecommendingResults.do?callback=" +
-                callBack +
-                "&widget_id=" +
-                widgetId +
-                "&platform=" +
-                platform +
-                "&limit=" +
-                limit +
-                "&offset=" +
-                String.valueOf(offSet) +
-                "&phase=" +
-                phase +
-                "&productIds2Top=&postback=" +
-                postBack
-        );
-    }
-
     public void toCloseWriter(){
         csvFileWriter.toClose();
     }
 
     @Override
     public void toParse() throws IOException, ParseException {
-        offSet += 12;
+        urlBuilder.setOffSet(12);
 
-        getUrl();
+        urlBuilder.getUrl();
 
         FileWriter fileWriter = new FileWriter(new File("data.json"));
 
-        Content getResult = Request.Get(stringBuilder.toString()).execute().returnContent();
+        Content getResult = Request.Get(urlBuilder.getStringBuilder().toString()).execute().returnContent();
         String data = getResult.toString();
         fileWriter.write(data.substring(data.indexOf("{"), data.lastIndexOf(")")));
         fileWriter.flush();
@@ -106,7 +80,6 @@ public class DynamicPageParser implements Parser {
                 itemApache.setProductDetailUrl(getStringItemdata(siteObject, "productDetailUrl"));
                 itemApache.setProductPositiveRate(getStringItemdata(siteObject, "productPositiveRate"));
                 itemApache.setProductAverageStar(getStringItemdata(siteObject, "productAverageStar"));
-
 
 
                 String[] itemToRecord = {
